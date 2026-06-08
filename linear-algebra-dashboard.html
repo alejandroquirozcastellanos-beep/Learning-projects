@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platzi Linear Algebra Visualizer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:'Segoe UI',system-ui,sans-serif;}
+.cc{position:relative;width:100%;height:540px;background:#0b1120;border-radius:.75rem;overflow:hidden;box-shadow:0 0 24px rgba(14,165,233,0.12);}
+canvas{display:block;width:100%;height:100%;}
+.p{background:#111827;border:1px solid #1f2937;border-radius:.75rem;}
+.cg{background:rgba(31,41,55,0.6);border:1px solid #374151;border-radius:.5rem;padding:.75rem;}
+.cl{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin-bottom:.25rem;}
+input[type="number"]{background:#0b1120;border:1px solid #4b5563;color:#e5e7eb;border-radius:.375rem;padding:.25rem .5rem;width:4.5rem;text-align:center;}
+input[type="number"]:focus{outline:none;border-color:#38bdf8;box-shadow:0 0 0 2px rgba(56,189,248,0.2);}
+input[type="range"]{accent-color:#38bdf8;width:100%;}
+select{background:#0b1120;border:1px solid #4b5563;color:#e5e7eb;border-radius:.375rem;padding:.3rem .5rem;}
+.mi{width:3.2rem;text-align:center;}
+.lb{transition:all .15s ease;}
+.lb.active{background:#0284c7;border-color:#0284c7;color:#fff;}
+.zb{background:#1f2937;border:1px solid #374151;color:#e5e7eb;border-radius:.375rem;padding:.35rem .6rem;font-size:.9rem;cursor:pointer;}
+.zb:hover{background:#374151;}
+.bd{font-size:.65rem;background:#1f2937;border:1px solid #374151;color:#9ca3af;padding:.1rem .4rem;border-radius:.25rem;}
+.fb{font-family:'Courier New',monospace;white-space:pre-wrap;background:#0b1120;border:1px solid #1f2937;border-radius:.5rem;padding:.75rem;color:#d1d5db;}
+</style>
+</head>
+<body class="bg-gray-950 text-gray-200 min-h-screen">
+<div class="max-w-7xl mx-auto p-4">
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+<div><h1 class="text-2xl font-bold text-sky-400">Platzi Linear Algebra Visualizer</h1><p class="text-sm text-gray-400">Dashboard interactivo de Algebra Lineal</p></div>
+<div class="flex items-center gap-2">
+<button class="zb" onclick="zOut()" title="Alejar">−</button>
+<span id="zLab" class="text-xs text-gray-400 w-12 text-center">100%</span>
+<button class="zb" onclick="zIn()" title="Acercar">+</button>
+<button class="zb" onclick="zReset()" title="Restablecer zoom">↺</button>
+<button id="rBtn" class="ml-2 px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-lg text-sm font-semibold transition" onclick="rAll()">Reset Space</button>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+<aside class="lg:col-span-3 space-y-2"><div class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Modulos del curso</div><div id="ll" class="space-y-2"></div></aside>
+<main class="lg:col-span-6 space-y-3">
+<div class="cc" id="cw"><canvas id="mc"></canvas><div id="co" class="absolute top-3 right-3 text-xs text-gray-400 bg-black/60 px-2 py-1 rounded pointer-events-none border border-white/10"></div></div>
+<div class="flex items-center justify-between text-xs text-gray-500 px-1"><span>Los cambios se reflejan en tiempo real en el canvas.</span><span class="bd">Zoom: <span id="zBd">1.0x</span></span></div>
+</main>
+<aside class="lg:col-span-3 space-y-4">
+<div class="p p-4"><h2 id="pt" class="text-lg font-semibold text-sky-300 mb-1"></h2><p id="pd" class="text-sm text-gray-400 mb-4 leading-relaxed"></p><div id="ca" class="space-y-3"></div></div>
+<div class="p p-4"><h3 class="text-sm font-semibold text-gray-300 mb-2">Formulas y notas</h3><div id="fa" class="fb text-sm"></div></div>
+<div class="p p-4"><h3 class="text-sm font-semibold text-gray-300 mb-2">🌍 Contexto del mundo real</h3><div id="rw" class="text-sm text-gray-400 space-y-2 leading-relaxed"></div></div>
+</aside>
+</div>
+</div>
+<script>
+const C=document.getElementById('mc'),X=C.getContext('2d');
+let W,H,S,O;
+const ST={lesson:0,u:[2,3],v:[1,-2],k:1,a1:1,a2:0,M:[[1,0],[0,1]],MA:[[1,0],[0,1]],MB:[[1,0],[0,1]],zoom:1};
+function rs(){const r=document.getElementById('cw').getBoundingClientRect();C.width=Math.floor(r.width);C.height=Math.floor(r.height);W=C.width;H=C.height;O={x:W/2,y:H/2};S=Math.min(W,H)/14*ST.zoom;dr();}
+window.addEventListener('resize',rs);
+function tc(x,y){return{x:O.x+x*S,y:O.y-y*S};}
+function am(x,y,m){return[m[0][0]*x+m[0][1]*y,m[1][0]*x+m[1][1]*y];}
+function mm(A,B){return[[A[0][0]*B[0][0]+A[0][1]*B[1][0],A[0][0]*B[0][1]+A[0][1]*B[1][1]],[A[1][0]*B[0][0]+A[1][1]*B[1][0],A[1][0]*B[0][1]+A[1][1]*B[1][1]]];}
+function dt(m){return m[0][0]*m[1][1]-m[0][1]*m[1][0];}
+function ev(m){const a=m[0][0],b=m[0][1],c=m[1][0],d=m[1][1],t=a+d,de=a*d-b*c,di=t*t-4*de;if(di<0)return null;return[(t+Math.sqrt(di))/2,(t-Math.sqrt(di))/2];}
+function eve(m,l){const a=m[0][0]-l,b=m[0][1],c=m[1][0],d=m[1][1]-l;if(Math.abs(a)>1e-3||Math.abs(b)>1e-3)return[-b,a];if(Math.abs(c)>1e-3||Math.abs(d)>1e-3)return[-d,c];return[1,0];}
+function nm(v){const l=Math.hypot(v[0],v[1]);return l?[v[0]/l,v[1]/l]:[1,0];}
+function fmt(n){return Number.isFinite(n)?parseFloat(n.toFixed(2)):n;}
+
+function dg(t){X.strokeStyle='#1f2937';X.lineWidth=1;const rx=Math.ceil(W/S/2)+2,ry=Math.ceil(H/S/2)+2;
+for(let i=-rx;i<=rx;i++){let a=tc(i,-ry),b=tc(i,ry);if(t){const p=am(i,-ry,t);a=tc(p[0],p[1]);const q=am(i,ry,t);b=tc(q[0],q[1]);}X.beginPath();X.moveTo(a.x,a.y);X.lineTo(b.x,b.y);X.stroke();}
+for(let i=-ry;i<=ry;i++){let a=tc(-rx,i),b=tc(rx,i);if(t){const p=am(-rx,i,t);a=tc(p[0],p[1]);const q=am(rx,i,t);b=tc(q[0],q[1]);}X.beginPath();X.moveTo(a.x,a.y);X.lineTo(b.x,b.y);X.stroke();}
+X.strokeStyle='#9ca3af';X.lineWidth=2;const xs=tc(-rx,0),xe=tc(rx,0);X.beginPath();X.moveTo(xs.x,xs.y);X.lineTo(xe.x,xe.y);X.stroke();const ys=tc(0,-ry),ye=tc(0,ry);X.beginPath();X.moveTo(ys.x,ys.y);X.lineTo(ye.x,ye.y);X.stroke();}
+
+function ar(f,t,co='#38bdf8',lb='',lw=2){X.strokeStyle=co;X.fillStyle=co;X.lineWidth=lw;X.beginPath();X.moveTo(f.x,f.y);X.lineTo(t.x,t.y);X.stroke();const a=Math.atan2(t.y-f.y,t.x-f.x),h=10;X.beginPath();X.moveTo(t.x,t.y);X.lineTo(t.x-h*Math.cos(a-Math.PI/6),t.y-h*Math.sin(a-Math.PI/6));X.lineTo(t.x-h*Math.cos(a+Math.PI/6),t.y-h*Math.sin(a+Math.PI/6));X.closePath();X.fill();if(lb){X.fillStyle=co;X.font='bold 13px sans-serif';X.fillText(lb,t.x+8,t.y-8);}}
+function pt(p,co='#f472b6',r=4,lb=''){X.fillStyle=co;X.beginPath();X.arc(p.x,p.y,r,0,Math.PI*2);X.fill();if(lb){X.fillStyle=co;X.font='12px sans-serif';X.fillText(lb,p.x+6,p.y-6);}}
+
+function zIn(){ST.zoom=Math.min(ST.zoom*1.2,5);rs();}
+function zOut(){ST.zoom=Math.max(ST.zoom/1.2,0.2);rs();}
+function zReset(){ST.zoom=1;rs();}
+function updZ(){const z=Math.round(ST.zoom*100)+'%';document.getElementById('zLab').textContent=z;document.getElementById('zBd').textContent=fmt(ST.zoom)+'x';}
+
+const L=[
+{ti:'1. Vectores y Coordenadas',de:'Un vector es un objeto geometrico con magnitud y direccion. En R2 lo representamos como un par ordenado (x, y).',fo:'u = [x, y]\nMagnitud = sqrt(x^2 + y^2)',ctx:'<b>LLMs:</b> Cada palabra en un modelo de lenguaje se representa como un vector de miles de dimensiones (embeddings). La direccion y magnitud capturan el significado semantico.<br><br><b>Finanzas:</b> Un activo puede verse como un vector donde cada componente es su rendimiento en un periodo. La magnitud representa la volatilidad total.<br><br><b>Cobranza:</b> Un cliente moroso se representa como un vector de caracteristicas (dias vencido, monto, frecuencia de pago). Las coordenadas definen su perfil de riesgo.',r(){dg();const o=tc(0,0),p=tc(ST.u[0],ST.u[1]);ar(o,p,'#38bdf8','u');pt(p,'#38bdf8',5);ge('co').textContent=`u=[${fmt(ST.u[0])},${fmt(ST.u[1])}] | |u|=${fmt(Math.hypot(ST.u[0],ST.u[1]))}`;},bc(el){el.appendChild(lab('Vector u (coordenadas)'));el.appendChild(vr('u',ST.u,(i,v)=>{ST.u[i]=+v;dr();}));}},
+{ti:'2. Operaciones con Vectores',de:'Suma: u+v por paralelogramo. Escalar: k*u estira/invierte. Dependencia: multiplos escalares comparten direccion u opuesta. Perpendiculares si producto punto = 0.',fo:'u+v = [ux+vx, uy+vy]\nk*u = [k*ux, k*uy]\nDependientes si u = a*v',ctx:'<b>LLMs:</b> La suma de vectores de palabra permite operaciones semanticas ("paris" - "francia" + "italia" ≈ "roma"). El producto punto mide similitud coseno entre documentos.<br><br><b>Finanzas:</b> La suma ponderada de rendimientos de activos da el retorno del portafolio. El producto punto calcula correlacion entre series de precios.<br><br><b>Cobranza:</b> Sumar vectores de comportamiento de pago (frecuencia, monto, puntualidad) genera un perfil de riesgo agregado. Vectores dependientes significan variables redundantes (multicolinealidad).',r(){dg();const o=tc(0,0),pu=tc(ST.u[0],ST.u[1]),pv=tc(ST.v[0],ST.v[1]),ku=tc(ST.k*ST.u[0],ST.k*ST.u[1]),su=tc(ST.u[0]+ST.v[0],ST.u[1]+ST.v[1]);ar(o,pu,'#38bdf8','u');pt(pu,'#38bdf8',4);ar(o,pv,'#f472b6','v');pt(pv,'#f472b6',4);ar(o,ku,'#fbbf24','k·u');X.setLineDash([4,4]);X.strokeStyle='#6b7280';X.lineWidth=1;X.beginPath();X.moveTo(pu.x,pu.y);X.lineTo(su.x,su.y);X.stroke();X.beginPath();X.moveTo(pv.x,pv.y);X.lineTo(su.x,su.y);X.stroke();X.setLineDash([]);ar(o,su,'#a78bfa','u+v');const dot=ST.u[0]*ST.v[0]+ST.u[1]*ST.v[1],nu=Math.hypot(ST.u[0],ST.u[1]),nv=Math.hypot(ST.v[0],ST.v[1]);let n='Independientes';if(nu<0.01||nv<0.01)n='Vector cero';else if(Math.abs(dot/(nu*nv)-1)<0.02)n='Misma direccion (dependientes)';else if(Math.abs(dot/(nu*nv)+1)<0.02)n='Opuesta (dependientes)';else if(Math.abs(dot)<0.05)n='Perpendiculares (90°)';ge('co').textContent=n+` | punto=${fmt(dot)}`;},bc(el){el.appendChild(lab('Vector u'));el.appendChild(vr('u',ST.u,(i,v)=>{ST.u[i]=+v;dr();}));el.appendChild(lab('Vector v'));el.appendChild(vr('v',ST.v,(i,v)=>{ST.v[i]=+v;dr();}));el.appendChild(lab('Escalar k (multiplica u)'));el.appendChild(sl('k',ST.k,-3,3,0.1,v=>{ST.k=+v;dr();}));}},
+{ti:'3. Combinaciones Lineales y Span',de:'El span de dos vectores es todo el plano que cubren sus combinaciones lineales. Si no son paralelos, span = R2.',fo:'w = a·u + b·v\nSpan{u,v} = {a·u+b·v | a,b∈R}',ctx:'<b>LLMs:</b> En embeddings, cada palabra es un vector en un espacio de alta dimension. Las combinaciones lineales permiten crear frases (por ejemplo, "rey" - "hombre" + "mujer" ≈ "reina").<br><br><b>Finanzas:</b> Un portafolio es una combinacion lineal de activos con pesos (escalares) que suman 1. El span representa todos los portafolios posibles dados esos activos.<br><br><b>Cobranza:</b> Un modelo de scoring combina linealmente variables (dias de mora, monto, historial) con pesos para generar un puntaje de riesgo.',r(){dg();const o=tc(0,0),pu=tc(ST.u[0],ST.u[1]),pv=tc(ST.v[0],ST.v[1]);const dot=ST.u[0]*ST.v[0]+ST.u[1]*ST.v[1],nu=Math.hypot(ST.u[0],ST.u[1]),nv=Math.hypot(ST.v[0],ST.v[1]);const dep=nu>0.01&&nv>0.01&&Math.abs(Math.abs(dot)/(nu*nv)-1)<0.02;if(dep){X.strokeStyle='rgba(56,189,248,0.5)';X.lineWidth=3;X.beginPath();const dir=[ST.u[0]/nu,ST.u[1]/nu];const len=10*S;X.moveTo(O.x-dir[0]*len,O.y+dir[1]*len);X.lineTo(O.x+dir[0]*len,O.y-dir[1]*len);X.stroke();ge('co').textContent='Vectores dependientes: Span = linea (1D)';}else{const corners=[tc(-4*ST.u[0]-4*ST.v[0],-4*ST.u[1]-4*ST.v[1]),tc(4*ST.u[0]-4*ST.v[0],4*ST.u[1]-4*ST.v[1]),tc(4*ST.u[0]+4*ST.v[0],4*ST.u[1]+4*ST.v[1]),tc(-4*ST.u[0]+4*ST.v[0],-4*ST.u[1]+4*ST.v[1])];X.fillStyle='rgba(56,189,248,0.12)';X.beginPath();X.moveTo(corners[0].x,corners[0].y);for(let i=1;i<4;i++)X.lineTo(corners[i].x,corners[i].y);X.closePath();X.fill();X.strokeStyle='rgba(56,189,248,0.3)';X.lineWidth=1;X.stroke();ge('co').textContent='Vectores independientes: Span = plano R2 (2D)';}const re=tc(ST.a1*ST.u[0]+ST.a2*ST.v[0],ST.a1*ST.u[1]+ST.a2*ST.v[1]);const p1=tc(ST.a1*ST.u[0],ST.a1*ST.u[1]),p2=tc(ST.a2*ST.v[0],ST.a2*ST.v[1]);X.setLineDash([3,3]);ar(o,p1,'rgba(56,189,248,0.4)','');ar(o,p2,'rgba(244,114,182,0.4)','');X.setLineDash([]);X.strokeStyle='#a78bfa';X.lineWidth=1;X.setLineDash([4,4]);X.beginPath();X.moveTo(p1.x,p1.y);X.lineTo(re.x,re.y);X.stroke();X.beginPath();X.moveTo(p2.x,p2.y);X.lineTo(re.x,re.y);X.stroke();X.setLineDash([]);ar(o,re,'#a78bfa','a·u+b·v');pt(re,'#a78bfa',5);ar(o,pu,'#38bdf8','u');pt(pu,'#38bdf8',4);ar(o,pv,'#f472b6','v');pt(pv,'#f472b6',4);},bc(el){el.appendChild(lab('Vector base u'));el.appendChild(vr('u',ST.u,(i,v)=>{ST.u[i]=+v;dr();}));el.appendChild(lab('Vector base v'));el.appendChild(vr('v',ST.v,(i,v)=>{ST.v[i]=+v;dr();}));el.appendChild(lab('Escalar a (coeficiente de u)'));el.appendChild(sl('a1',ST.a1,-3,3,0.1,v=>{ST.a1=+v;dr();}));el.appendChild(lab('Escalar b (coeficiente de v)'));el.appendChild(sl('a2',ST.a2,-3,3,0.1,v=>{ST.a2=+v;dr();}));}},
+{ti:'4. Matrices como Transformaciones',de:'Una matriz 2x2 deforma el plano. Cada columna indica donde cae cada vector base. Usa presets o edita la matriz manualmente.',fo:'T(x)=A·x\nA=[[a,b],[c,d]]',ctx:'<b>LLMs:</b> Las matrices de atencion transforman embeddings de palabras para resaltar relaciones contextuales. Cada capa de un transformer aplica transformaciones lineales a los vectores de entrada.<br><br><b>Finanzas:</b> Una matriz de covarianza describe como varian los rendimientos de activos juntos. Las transformaciones lineales sirven para reducir dimensiones (PCA) en riesgo de portafolio.<br><br><b>Cobranza:</b> Segmentar clientes morosos por riesgo es una transformacion lineal: se proyectan variables (edad, saldo, historial) en nuevos ejes que maximizan la diferenciacion de grupos.',r(){const m=ST.M;dg(m);const e1=am(1,0,m),e2=am(0,1,m),o=tc(0,0);ar(o,tc(e1[0],e1[1]),'#38bdf8',"A·e1");pt(tc(e1[0],e1[1]),'#38bdf8',4);ar(o,tc(e2[0],e2[1]),'#f472b6',"A·e2");pt(tc(e2[0],e2[1]),'#f472b6',4);ge('co').textContent=`det(A)=${fmt(dt(m))}`;},bc(el){el.appendChild(lab('Transformacion preset'));const sel=document.createElement('select');sel.className='w-full text-sm';[{v:'identity',t:'Identidad'},{v:'rotate90',t:'Rotacion 90°'},{v:'scale2',t:'Escalar x2'},{v:'shearX',t:'Shear X'},{v:'projection',t:'Proyeccion X'},{v:'scaleX',t:'Escalar X=2'},{v:'reflectY',t:'Reflexion X'}].forEach(o=>{const op=document.createElement('option');op.value=o.v;op.textContent=o.t;if(ST.preset&&ST.preset===o.v)op.selected=true;sel.appendChild(op);});sel.onchange=()=>ap(sel.value);el.appendChild(sel);el.appendChild(lab('Matriz A (edita cada celda)'));el.appendChild(mx('M',ST.M,dr));}},
+{ti:'5. Multiplicacion de Matrices',de:'Aplicar A y luego B equivale a B·A. El vector final es identico si aplicas secuencialmente o la compuesta.',fo:'C=B·A\nv_final=C·v',ctx:'<b>LLMs:</b> Componer capas en una red neuronal equivale a multiplicar matrices de pesos. Cada capa transforma el espacio latente antes de pasarlo a la siguiente.<br><br><b>Finanzas:</b> Aplicar primero una rotacion de cartera (A) y luego un reescalamiento de riesgo (B) es una composicion de matrices. El orden importa: B·A ≠ A·B.<br><br><b>Cobranza:</b> Un modelo de scoring puede tener una matriz de normalizacion (A) seguida de una matriz de pesos de variables (B). La matriz compuesta resume todo el modelo.',r(){dg();const v0=[1,1],v1=am(v0[0],v0[1],ST.MA),v2=am(v1[0],v1[1],ST.MB),C=mm(ST.MB,ST.MA),vC=am(v0[0],v0[1],C),o=tc(0,0);ar(o,tc(v0[0],v0[1]),'#94a3b8','v');ar(o,tc(v1[0],v1[1]),'#38bdf8','A·v');ar(o,tc(v2[0],v2[1]),'#f472b6','B·(A·v)');ar(o,tc(vC[0],vC[1]),'#fbbf24','(B·A)·v',1);ge('co').textContent='Secuencial vs Compuesta';},bc(el){el.appendChild(lab('Matriz A (primera transformacion)'));el.appendChild(mx('MA',ST.MA,dr));el.appendChild(lab('Matriz B (segunda transformacion)'));el.appendChild(mx('MB',ST.MB,dr));}},
+{ti:'6. Determinante',de:'El determinante mide el cambio de area. det=0 => colapso (no invertible). det<0 => orientacion invertida.',fo:'det(A)=ad-bc\nNo invertible si det=0',ctx:'<b>LLMs:</b> El volumen del espacio latente determina la diversidad de textos que un modelo puede generar. Un determinante cercano a cero en la matriz de covarianza indica embeddings redundantes.<br><br><b>Finanzas:</b> El determinante de la matriz de covarianza mide el volumen de riesgo del portafolio. Si es cero, hay redundancia: dos activos se mueven identicamente, eliminando diversificacion.<br><br><b>Cobranza:</b> En un modelo de scoring, un determinante cero significa que dos variables predictoras son linealmente dependientes (por ejemplo, dias de mora y meses sin pago), lo que distorsiona el modelo.',r(){const m=ST.M,d=dt(m);dg(m);const p00=tc(0,0),p10=tc(m[0][0],m[1][0]),p01=tc(m[0][1],m[1][1]),p11=tc(m[0][0]+m[0][1],m[1][0]+m[1][1]);X.fillStyle=d>=0?'rgba(56,189,248,0.2)':'rgba(244,114,182,0.2)';X.beginPath();X.moveTo(p00.x,p00.y);X.lineTo(p10.x,p10.y);X.lineTo(p11.x,p11.y);X.lineTo(p01.x,p01.y);X.closePath();X.fill();X.strokeStyle=d>=0?'#38bdf8':'#f472b6';X.lineWidth=2;X.stroke();pt(p00,'#fff',3,'0');pt(p10,'#38bdf8',4,"e1'");pt(p01,'#f472b6',4,"e2'");let t=`det=${fmt(d)}`;if(Math.abs(d)<0.01)t+=' | Colapso!';else if(d<0)t+=' | Orientacion invertida';ge('co').textContent=t;},bc(el){el.appendChild(lab('Matriz A'));el.appendChild(mx('M',ST.M,dr));el.appendChild(inf('Tip: Prueba Proyeccion X para ver colapso (det=0).'));}},
+{ti:'7. Eigenvalores y Eigenvectores',de:'Eigenvector: vector que solo escala sin cambiar de direccion. Eigenvalor: factor de escala. Son los ejes naturales de la transformacion.',fo:'A·v=λ·v',ctx:'<b>LLMs:</b> Los eigenvectores de la matriz de covarianza de embeddings definen los ejes principales de variacion semantica (PCA). El eigenvalor indica que tan importante es cada tema latente.<br><br><b>Finanzas:</b> En PCA de rendimientos de activos, los eigenvectores son los "factores de riesgo" del mercado (mercado, tamaño, valor). Los eigenvalores miden la varianza explicada por cada factor.<br><br><b>Cobranza:</b> En un modelo de scoring, los eigenvectores revelan las combinaciones de variables que mas influyen en el comportamiento de pago. Un eigenvalor alto indica un factor dominante (ej. historial crediticio).',r(){const m=ST.M,la=ev(m);dg(m);if(la){const v1=nm(eve(m,la[0])),v2=nm(eve(m,la[1])),L=6;X.strokeStyle='#fbbf24';X.lineWidth=2;X.setLineDash([6,4]);const a1=tc(v1[0]*L,v1[1]*L),a2=tc(-v1[0]*L,-v1[1]*L);X.beginPath();X.moveTo(a2.x,a2.y);X.lineTo(a1.x,a1.y);X.stroke();X.strokeStyle='#f472b6';const b1=tc(v2[0]*L,v2[1]*L),b2=tc(-v2[0]*L,-v2[1]*L);X.beginPath();X.moveTo(b2.x,b2.y);X.lineTo(b1.x,b1.y);X.stroke();X.setLineDash([]);const t1=am(v1[0]*3,v1[1]*3,m),t2=am(v2[0]*3,v2[1]*3,m);ar(tc(0,0),tc(t1[0],t1[1]),'#fbbf24','');ar(tc(0,0),tc(t2[0],t2[1]),'#f472b6','');ge('co').textContent=`λ1=${fmt(la[0])} λ2=${fmt(la[1])}`;}else{X.fillStyle='#fbbf24';X.font='14px sans-serif';X.fillText('Eigenvalores complejos: sin direcciones reales invariantes.',20,30);ge('co').textContent='Sin eigenvectores reales';}const e1=am(1,0,m),e2=am(0,1,m);ar(tc(0,0),tc(e1[0],e1[1]),'#38bdf8',"e1'");ar(tc(0,0),tc(e2[0],e2[1]),'#f472b6',"e2'");},bc(el){el.appendChild(lab('Matriz A'));el.appendChild(mx('M',ST.M,dr));el.appendChild(inf('Lineas punteadas = direcciones invariantes (eigenvectores).'));}}
+];
+
+function ge(id){return document.getElementById(id);}
+function lab(t){const d=document.createElement('div');d.className='cl';d.textContent=t;return d;}
+function inf(t){const d=document.createElement('div');d.className='text-xs text-gray-400 mt-1';d.textContent=t;return d;}
+function vr(name,vec,cb){const w=document.createElement('div');w.className='cg flex items-center gap-3';const l=document.createElement('div');l.className='text-sm font-bold text-sky-300 w-8';l.textContent=name;w.appendChild(l);['x','y'].forEach((ax,i)=>{const g=document.createElement('div');g.className='flex items-center gap-1';const s=document.createElement('span');s.className='text-xs text-gray-400';s.textContent=ax;g.appendChild(s);const n=document.createElement('input');n.type='number';n.step='0.1';n.value=fmt(vec[i]);n.oninput=()=>cb(i,n.value);g.appendChild(n);w.appendChild(g);});return w;}
+function sl(id,val,min,max,step,cb){const w=document.createElement('div');w.className='cg';const r=document.createElement('div');r.className='flex items-center justify-between mb-1';const t=document.createElement('span');t.className='text-sm font-semibold text-sky-300';t.textContent=fmt(val);r.appendChild(t);w.appendChild(r);const i=document.createElement('input');i.type='range';i.min=min;i.max=max;i.step=step;i.value=val;i.oninput=()=>{t.textContent=fmt(i.value);cb(i.value);};w.appendChild(i);return w;}
+function mx(name,mat,cb){const w=document.createElement('div');w.className='cg';const g=document.createElement('div');g.className='grid grid-cols-2 gap-2 w-max mx-auto';function up(){g.querySelectorAll('input').forEach((inp,idx)=>{const r=Math.floor(idx/2),c=idx%2;inp.value=fmt(mat[r][c]);});}function mk(r,c){const n=document.createElement('input');n.type='number';n.step='0.1';n.className='mi';n.value=fmt(mat[r][c]);n.oninput=()=>{mat[r][c]=+n.value;cb();};return n;}for(let r=0;r<2;r++)for(let c=0;c<2;c++)g.appendChild(mk(r,c));w.appendChild(g);w.dataset.mat=name;w._update=up;return w;}
+
+function ap(name){const p={identity:[[1,0],[0,1]],rotate90:[[0,-1],[1,0]],scale2:[[2,0],[0,2]],shearX:[[1,1],[0,1]],projection:[[1,0],[0,0]],scaleX:[[2,0],[0,1]],reflectY:[[1,0],[0,-1]]};ST.M=p[name]||[[1,0],[0,1]];ST.preset=name;rc();dr();}
+
+function sel(i){ST.lesson=i;document.querySelectorAll('.lb').forEach((b,idx)=>b.classList.toggle('active',idx===i));const le=L[i];ge('pt').textContent=le.ti;ge('pd').textContent=le.de;ge('fa').textContent=le.fo;ge('rw').innerHTML=le.ctx||'';rc();dr();}
+function rc(){const el=ge('ca');el.innerHTML='';L[ST.lesson].bc(el);}
+function dr(){X.clearRect(0,0,W,H);updZ();L[ST.lesson].r();}
+function rAll(){ST.u=[2,3];ST.v=[1,-2];ST.k=1;ST.a1=1;ST.a2=0;ST.M=[[1,0],[0,1]];ST.MA=[[1,0],[0,1]];ST.MB=[[1,0],[0,1]];ST.zoom=1;rc();rs();}
+ge('rBtn').onclick=rAll;
+
+const ll=ge('ll');
+L.forEach((le,i)=>{const b=document.createElement('button');b.className='lb w-full text-left px-3 py-2 rounded-lg text-sm font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 transition';b.textContent=le.ti;b.onclick=()=>sel(i);ll.appendChild(b);});
+sel(0);rs();
+</script>
+</body>
+</html>
